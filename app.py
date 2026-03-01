@@ -3,6 +3,7 @@
 Interface de configuration Streamlit pour l'outil de veille juridique.
 Lance avec : streamlit run app.py
 """
+
 import json
 import streamlit as st
 from pathlib import Path
@@ -15,55 +16,198 @@ from config.settings import (
 # === Page config ===
 st.set_page_config(
     page_title="Veille Juridique — Configuration",
-    page_icon="📋",
+    page_icon="⚖️",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# === Custom CSS ===
+# === Custom CSS — Design inspiré Club Med ===
 st.markdown("""
 <style>
-    .stApp { max-width: 1000px; margin: 0 auto; }
-    .block-container { padding-top: 2rem; }
-    h1 { color: #1a1a2e; }
-    .stTabs [data-baseweb="tab-list"] { gap: 8px; }
+    /* ── Polices ── */
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');
+
+    .stApp, .stMarkdown, p, li, span, label, div {
+        font-family: 'Noto Sans', sans-serif !important;
+    }
+    h1, h2, h3 {
+        font-family: 'Playfair Display', serif !important;
+        color: #1A1A1A !important;
+    }
+
+    /* ── Layout ── */
+    .stApp { max-width: 1080px; margin: 0 auto; }
+    .block-container { padding-top: 1.5rem; }
+
+    /* ── Onglets — FIX LISIBILITÉ ── */
+    .stTabs [data-baseweb="tab-list"] {
+        background: #F5F5F3;
+        border-radius: 10px;
+        padding: 4px;
+        gap: 4px;
+    }
     .stTabs [data-baseweb="tab"] {
-        background-color: #f1f5f9;
-        border-radius: 8px;
-        padding: 8px 20px;
+        font-family: 'Noto Sans', sans-serif !important;
+        font-weight: 500 !important;
+        font-size: 14px !important;
+        color: #4A4A4A !important;
+        background: transparent !important;
+        border-radius: 8px !important;
+        padding: 10px 18px !important;
+        border: none !important;
+        white-space: nowrap !important;
+    }
+    .stTabs [data-baseweb="tab"]:hover {
+        background: rgba(0, 87, 160, 0.07) !important;
+        color: #0057A0 !important;
     }
     .stTabs [aria-selected="true"] {
-        background-color: #1a1a2e !important;
-        color: white !important;
+        background: #FFFFFF !important;
+        color: #0057A0 !important;
+        font-weight: 600 !important;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.1) !important;
     }
+    .stTabs [data-baseweb="tab-highlight"] {
+        background-color: #0057A0 !important;
+    }
+    .stTabs [data-baseweb="tab-border"] {
+        display: none !important;
+    }
+
+    /* ── Sidebar bleu marine ── */
+    section[data-testid="stSidebar"] {
+        background: #0057A0 !important;
+    }
+    section[data-testid="stSidebar"] > div:first-child {
+        padding: 1.5rem 1.2rem !important;
+    }
+    section[data-testid="stSidebar"] .stMarkdown,
+    section[data-testid="stSidebar"] p,
+    section[data-testid="stSidebar"] li,
+    section[data-testid="stSidebar"] span,
+    section[data-testid="stSidebar"] label,
+    section[data-testid="stSidebar"] h1,
+    section[data-testid="stSidebar"] h2,
+    section[data-testid="stSidebar"] h3 {
+        color: #FFFFFF !important;
+    }
+    section[data-testid="stSidebar"] .stCaption p {
+        color: rgba(255,255,255,0.7) !important;
+    }
+    section[data-testid="stSidebar"] hr {
+        border-color: rgba(255,255,255,0.2) !important;
+    }
+    section[data-testid="stSidebar"] .stButton button {
+        background: rgba(255,255,255,0.15) !important;
+        color: #FFFFFF !important;
+        border: 1px solid rgba(255,255,255,0.3) !important;
+        border-radius: 8px !important;
+        font-family: 'Noto Sans', sans-serif !important;
+    }
+    section[data-testid="stSidebar"] .stButton button:hover {
+        background: rgba(255,255,255,0.25) !important;
+    }
+
+    /* ── Boutons principaux ── */
+    .stButton button[kind="primary"],
+    button[data-testid="stBaseButton-primary"] {
+        background: #0057A0 !important;
+        color: #FFFFFF !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        font-family: 'Noto Sans', sans-serif !important;
+        transition: all 0.2s ease !important;
+    }
+    .stButton button[kind="primary"]:hover,
+    button[data-testid="stBaseButton-primary"]:hover {
+        background: #003F73 !important;
+        box-shadow: 0 4px 12px rgba(0,87,160,0.25) !important;
+    }
+
+    /* ── Boutons secondaires ── */
+    .stButton button[kind="secondary"],
+    button[data-testid="stBaseButton-secondary"] {
+        border: 1.5px solid #0057A0 !important;
+        color: #0057A0 !important;
+        background: transparent !important;
+        border-radius: 8px !important;
+    }
+
+    /* ── Inputs ── */
+    .stTextInput input, .stTextArea textarea {
+        border: 1.5px solid #D4D4D4 !important;
+        border-radius: 8px !important;
+        font-family: 'Noto Sans', sans-serif !important;
+    }
+    .stTextInput input:focus, .stTextArea textarea:focus {
+        border-color: #0057A0 !important;
+        box-shadow: 0 0 0 2px rgba(0,87,160,0.12) !important;
+    }
+
+    /* ── Métriques ── */
+    div[data-testid="stMetric"] {
+        background: #F5F5F3;
+        border-radius: 10px;
+        padding: 14px 18px;
+    }
+    div[data-testid="stMetric"] label {
+        color: #767676 !important;
+    }
+    div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
+        color: #0057A0 !important;
+        font-weight: 700 !important;
+    }
+
+    /* ── Cards sources ── */
     .source-card {
-        border: 1px solid #e2e8f0;
+        border: 1px solid #E8E8E8;
         border-radius: 10px;
         padding: 16px;
         margin-bottom: 12px;
-        background: #fafbfc;
+        background: #FAFAFA;
     }
+
+    /* ── Statuts ── */
     .status-ok { color: #16a34a; font-weight: 600; }
     .status-warn { color: #d97706; font-weight: 600; }
     .status-error { color: #dc2626; font-weight: 600; }
+
+    /* ── Expanders ── */
+    div[data-testid="stExpander"] {
+        border: 1px solid #E8E8E8 !important;
+        border-radius: 10px !important;
+    }
+    div[data-testid="stExpander"]:hover {
+        border-color: #0057A0 !important;
+    }
+
+    /* ── Dividers ── */
+    hr { border-color: #E8E8E8 !important; }
+
+    /* ── Masquer éléments Streamlit par défaut ── */
+    #MainMenu { visibility: hidden; }
+    footer { visibility: hidden; }
+    header { visibility: hidden; }
 </style>
 """, unsafe_allow_html=True)
 
 # === Load config ===
 if "config" not in st.session_state:
     st.session_state.config = load_user_config()
-
 config = st.session_state.config
 
-
 # === Header ===
-st.title("📋 Veille Juridique Automatisée")
+st.title("⚖️ Veille Juridique Automatisée")
 st.caption("Configurez vos sources, domaines d'expertise et préférences de digest.")
 
 # === Tabs ===
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "🎯 Expertise", "📡 Sources publiques", "🔐 Sources privées",
-    "📬 Newsletters", "📧 Envoi & Test"
+    "🎯 Expertise",
+    "📡 Sources publiques",
+    "🔐 Sources privées",
+    "📬 Newsletters",
+    "📧 Envoi & Test"
 ])
 
 # ============================================
@@ -93,6 +237,7 @@ with tab1:
     config["expertise_domains"] = expertise
 
     st.divider()
+
     st.subheader("Email du destinataire")
     recipient = st.text_input(
         "Adresse email pour recevoir le digest",
@@ -115,21 +260,23 @@ with tab2:
     sources_to_remove = []
     for i, source in enumerate(public_sources):
         col1, col2, col3, col4 = st.columns([3, 2, 1, 0.5])
+
         with col1:
             source["url"] = st.text_input(
-                "URL", value=source.get("url", ""), key=f"pub_url_{i}",
-                label_visibility="collapsed",
+                "URL", value=source.get("url", ""),
+                key=f"pub_url_{i}", label_visibility="collapsed",
                 placeholder="https://www.dalloz-actualite.fr",
             )
         with col2:
             source["name"] = st.text_input(
-                "Nom", value=source.get("name", ""), key=f"pub_name_{i}",
-                label_visibility="collapsed",
+                "Nom", value=source.get("name", ""),
+                key=f"pub_name_{i}", label_visibility="collapsed",
                 placeholder="Nom de la source",
             )
         with col3:
             source["type"] = st.selectbox(
-                "Type", ["rss", "scrape"], key=f"pub_type_{i}",
+                "Type", ["rss", "scrape"],
+                key=f"pub_type_{i}",
                 index=0 if source.get("type", "rss") == "rss" else 1,
                 label_visibility="collapsed",
             )
@@ -229,12 +376,11 @@ with tab3:
             with col2:
                 creds = source.get("credentials", {})
                 creds["username"] = st.text_input(
-                    "Identifiant", value=creds.get("username", ""), key=f"priv_user_{i}",
+                    "Identifiant", value=creds.get("username", ""),
+                    key=f"priv_user_{i}",
                 )
                 new_pass = st.text_input(
-                    "Mot de passe",
-                    type="password",
-                    key=f"priv_pass_{i}",
+                    "Mot de passe", type="password", key=f"priv_pass_{i}",
                     placeholder="Laisser vide pour ne pas modifier",
                 )
                 if new_pass and ENCRYPTION_KEY:
@@ -244,8 +390,7 @@ with tab3:
             if st.button("🗑 Supprimer", key=f"priv_del_{i}"):
                 private_sources.pop(i)
                 st.rerun()
-
-            st.divider()
+        st.divider()
 
     # Ajouter
     with st.expander("➕ Ajouter une source privée"):
@@ -322,7 +467,6 @@ with tab5:
 
     # Résumé config
     st.subheader("📊 Résumé de la configuration")
-
     col1, col2, col3 = st.columns(3)
     with col1:
         n_pub = len(config.get("public_sources", []))
@@ -381,7 +525,7 @@ with tab5:
 
 # === Sidebar ===
 with st.sidebar:
-    st.markdown("### 🔧 Outils")
+    st.markdown("### ⚖️ Outils")
 
     if st.button("📋 Exporter config JSON"):
         st.download_button(
@@ -392,14 +536,15 @@ with st.sidebar:
         )
 
     st.divider()
+
     st.markdown("### 📖 Guide rapide")
     st.markdown("""
-    1. **Expertise** : décrivez vos domaines
-    2. **Sources publiques** : ajoutez RSS/sites
-    3. **Sources privées** : ajoutez vos accès
-    4. **Newsletters** : configurez le forwarding
-    5. **Sauvegardez** et testez !
-    """)
+1. **Expertise** : décrivez vos domaines
+2. **Sources publiques** : ajoutez RSS/sites
+3. **Sources privées** : ajoutez vos accès
+4. **Newsletters** : configurez le forwarding
+5. **Sauvegardez** et testez !
+""")
 
     st.divider()
     st.caption("Veille Juridique IA v1.0")
