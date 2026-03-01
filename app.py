@@ -200,7 +200,7 @@ st.caption("Configurez vos sources, domaines d'expertise et préférences de dig
 # === Tabs ===
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "🎯 Expertise",
-    "📡 Sources publiques",
+    "📡 Sources",
     "🔐 Sources privées",
     "📬 Newsletters",
     "⚙️ Paramètres"
@@ -274,19 +274,19 @@ Sujets prioritaires : réglementation des promotions, green claims, influenceurs
 # TAB 2 : SOURCES PUBLIQUES
 # ============================================
 with tab2:
-    st.header("Sources publiques (RSS / Scraping)")
-    st.info("Sites accessibles sans authentification. Les flux RSS seront détectés automatiquement.")
+    st.header("Sources de veille")
+    st.info("Entrez simplement l'URL d'un site. L'app détectera automatiquement le flux RSS. S'il n'y en a pas, la page sera scrapée.")
 
     public_sources = config.get("public_sources", [])
 
     sources_to_remove = []
     for i, source in enumerate(public_sources):
-        col1, col2, col3, col4 = st.columns([3, 2, 1, 0.5])
+        col1, col2, col3 = st.columns([4, 3, 0.5])
         with col1:
             source["url"] = st.text_input(
                 "URL", value=source.get("url", ""),
                 key=f"pub_url_{i}", label_visibility="collapsed",
-                placeholder="https://www.dalloz-actualite.fr",
+                placeholder="https://www.cnil.fr",
             )
         with col2:
             source["name"] = st.text_input(
@@ -295,13 +295,6 @@ with tab2:
                 placeholder="Nom de la source",
             )
         with col3:
-            source["type"] = st.selectbox(
-                "Type", ["rss", "scrape"],
-                key=f"pub_type_{i}",
-                index=0 if source.get("type", "rss") == "rss" else 1,
-                label_visibility="collapsed",
-            )
-        with col4:
             if st.button("🗑", key=f"pub_del_{i}"):
                 sources_to_remove.append(i)
 
@@ -310,16 +303,15 @@ with tab2:
         st.rerun()
 
     st.divider()
-    with st.expander("➕ Ajouter une source publique"):
-        new_url = st.text_input("URL du site", key="new_pub_url", placeholder="https://www.legifrance.gouv.fr")
-        new_name = st.text_input("Nom affiché", key="new_pub_name", placeholder="Légifrance")
-        new_type = st.selectbox("Type de collecte", ["rss", "scrape"], key="new_pub_type")
+    with st.expander("➕ Ajouter une source"):
+        new_url = st.text_input("URL du site", key="new_pub_url", placeholder="https://www.cnil.fr")
+        new_name = st.text_input("Nom affiché (optionnel)", key="new_pub_name", placeholder="CNIL")
+        st.caption("L'app détectera automatiquement si un flux RSS est disponible. Sinon, la page sera scrapée.")
         if st.button("Ajouter", key="btn_add_pub"):
             if new_url:
                 public_sources.append({
                     "url": new_url.strip(),
                     "name": new_name.strip() or new_url.split("//")[-1].split("/")[0],
-                    "type": new_type,
                 })
                 st.success(f"✅ Source ajoutée : {new_name or new_url}")
                 st.rerun()
@@ -328,14 +320,14 @@ with tab2:
     st.subheader("💡 Sources suggérées")
 
     suggested = [
-        {"url": "https://www.legifrance.gouv.fr", "name": "Légifrance", "type": "rss"},
-        {"url": "https://www.dalloz-actualite.fr", "name": "Dalloz Actualité", "type": "rss"},
-        {"url": "https://www.village-justice.com", "name": "Village de la Justice", "type": "rss"},
-        {"url": "https://www.cnil.fr", "name": "CNIL", "type": "rss"},
-        {"url": "https://eur-lex.europa.eu", "name": "EUR-Lex", "type": "rss"},
-        {"url": "https://www.economie.gouv.fr/dgccrf", "name": "DGCCRF", "type": "scrape"},
-        {"url": "https://www.conseil-constitutionnel.fr", "name": "Conseil constitutionnel", "type": "rss"},
-        {"url": "https://curia.europa.eu", "name": "CJUE", "type": "rss"},
+        {"url": "https://www.village-justice.com", "name": "Village de la Justice"},
+        {"url": "https://www.cnil.fr", "name": "CNIL"},
+        {"url": "https://www.dalloz-actualite.fr", "name": "Dalloz Actualité"},
+        {"url": "https://www.actu-juridique.fr", "name": "Actu-Juridique.fr"},
+        {"url": "https://www.conseil-constitutionnel.fr", "name": "Conseil constitutionnel"},
+        {"url": "https://curia.europa.eu", "name": "CJUE"},
+        {"url": "https://eur-lex.europa.eu", "name": "EUR-Lex"},
+        {"url": "https://www.economie.gouv.fr/dgccrf", "name": "DGCCRF"},
     ]
 
     cols = st.columns(4)
@@ -479,7 +471,7 @@ st.markdown("---")
 st.markdown("""
 <div class="launch-zone">
     <h3>🚀 Lancer la veille</h3>
-    <p>Collecte les articles de vos sources, les analyse avec l'IA Claude et génère un digest trié par pertinence.</p>
+    <p>Collecte les articles de vos sources (RSS détecté automatiquement ou scraping), les analyse avec l'IA Claude et génère un digest trié par pertinence.</p>
 </div>
 """, unsafe_allow_html=True)
 
