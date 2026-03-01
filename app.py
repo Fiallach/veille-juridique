@@ -14,8 +14,11 @@ from datetime import datetime
 from config.settings import (
     load_user_config, save_user_config,
     encrypt_value, ENCRYPTION_KEY, DATA_DIR,
-    MIN_RELEVANCE_SCORE,
 )
+
+# Seuil de pertinence bas pour ne pas rater d'articles intéressants
+# L'utilisateur peut ensuite trier visuellement par score
+MIN_RELEVANCE_SCORE = 30
 from collectors.rss_collector import collect_from_rss, Article
 from analysis.scorer import score_article
 from analysis.dedup import deduplicate_articles
@@ -209,9 +212,37 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 # ============================================
 with tab1:
     st.header("Domaines d'expertise")
+
+    # ── Assistant de setup ──
+    with st.container(border=True):
+        st.markdown("**💡 Comment bien renseigner vos domaines**")
+        st.markdown("""
+Vos domaines sont traités comme **alternatifs** : un article sera retenu s'il touche
+**au moins un** de vos domaines, pas forcément tous.
+
+Pour un scoring optimal, structurez votre description ainsi :
+- **Listez chaque domaine séparément** (droit des marques, droit du tourisme…)
+- **Précisez votre secteur** pour contextualiser (tourisme, hôtellerie…)
+- **Ajoutez vos sujets prioritaires** si vous en avez (influenceurs, green claims…)
+""")
+
+        # Bouton d'aide pour pré-remplir un template
+        if st.button("✨ Générer un template d'exemple", key="template_btn"):
+            st.session_state["show_template"] = True
+
+        if st.session_state.get("show_template"):
+            st.code("""Domaine 1 : Droit du tourisme (Code du tourisme, responsabilité des organisateurs, vente de séjours)
+Domaine 2 : Droit des marques (propriété intellectuelle, contrefaçon, co-branding, licensing)
+Domaine 3 : Droit de la consommation (publicité loyale, promotions, annonces de réduction de prix, pratiques commerciales trompeuses)
+
+Secteur : Tourisme / hôtellerie de vacances
+
+Sujets prioritaires : réglementation des promotions, green claims, influenceurs, jeux-concours, droit à l'image""", language=None)
+            st.caption("Copiez et adaptez ce template dans la zone ci-dessous.")
+
     st.info(
-        "Décrivez vos domaines d'expertise en langage naturel. "
-        "L'IA utilisera cette description pour évaluer la pertinence des articles."
+        "⚠️ Chaque domaine listé sera évalué **indépendamment**. "
+        "Un article sur la contrefaçon de marques sera retenu même s'il ne parle pas de tourisme."
     )
 
     expertise = st.text_area(
@@ -219,13 +250,11 @@ with tab1:
         value=config.get("expertise_domains", ""),
         height=200,
         placeholder=(
-            "Ex : Juriste d'entreprise spécialisé en droit du tourisme "
-            "(Code du tourisme), droit de la consommation (publicité loyale, "
-            "annonces de réduction de prix, pratiques commerciales trompeuses), "
-            "RGPD, droit des marques et propriété intellectuelle. "
-            "Secteur : tourisme / hôtellerie de vacances. "
-            "Intérêt particulier pour : réglementation des promotions, "
-            "green claims, influenceurs, jeux-concours, droit à l'image."
+            "Domaine 1 : Droit du tourisme (Code du tourisme, vente de séjours)\n"
+            "Domaine 2 : Droit des marques (PI, contrefaçon, co-branding)\n"
+            "Domaine 3 : Droit de la consommation (publicité loyale, promotions)\n\n"
+            "Secteur : tourisme / hôtellerie de vacances\n\n"
+            "Sujets prioritaires : green claims, influenceurs, jeux-concours"
         ),
     )
     config["expertise_domains"] = expertise
