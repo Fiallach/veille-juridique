@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Veille Juridique — Semaine du {{ week_date }}</title>
+  <style>
+    /* Reset */
+    body, table, td { margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: #f4f5f7;
+      color: #1a1a2e;
+      line-height: 1.6;
+    }
+    
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+      background: #ffffff;
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #ffffff;
+      padding: 32px 40px;
+    }
+    .header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      margin: 0 0 6px 0;
+      letter-spacing: -0.3px;
+    }
+    .header .subtitle {
+      font-size: 14px;
+      color: #a0aec0;
+      margin: 0;
+    }
+    .header .stats {
+      margin-top: 16px;
+      display: flex;
+      gap: 24px;
+    }
+    .stat-box {
+      display: inline-block;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .stat-urgent { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+    .stat-vigilance { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+    .stat-info { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+
+    /* Body */
+    .body-content {
+      padding: 32px 40px;
+    }
+
+    /* Section */
+    .section {
+      margin-bottom: 32px;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    .section-icon {
+      display: inline-block;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      text-align: center;
+      line-height: 28px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .icon-urgent { background: #fee2e2; color: #dc2626; }
+    .icon-vigilance { background: #fef3c7; color: #d97706; }
+    .icon-info { background: #dbeafe; color: #2563eb; }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin: 0;
+    }
+    .section-count {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-left: auto;
+    }
+
+    /* Article card */
+    .article-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 18px 20px;
+      margin-bottom: 12px;
+      transition: border-color 0.2s;
+    }
+    .article-card:hover {
+      border-color: #3b82f6;
+    }
+    .article-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1a1a2e;
+      text-decoration: none;
+      line-height: 1.4;
+    }
+    .article-title:hover {
+      color: #2563eb;
+    }
+    .article-meta {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+    .article-meta .source {
+      color: #64748b;
+      font-weight: 500;
+    }
+    .article-summary {
+      font-size: 13px;
+      color: #475569;
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+    .article-tags {
+      margin-top: 10px;
+    }
+    .tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 12px;
+      background: #f1f5f9;
+      color: #475569;
+      margin-right: 6px;
+      margin-bottom: 4px;
+    }
+    .article-score {
+      display: inline-block;
+      float: right;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+    .score-high { background: #fee2e2; color: #dc2626; }
+    .score-medium { background: #fef3c7; color: #d97706; }
+    .score-low { background: #dbeafe; color: #2563eb; }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 20px;
+      color: #94a3b8;
+      font-size: 13px;
+      font-style: italic;
+    }
+
+    /* Footer */
+    .footer {
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      padding: 24px 40px;
+      text-align: center;
+    }
+    .footer p {
+      font-size: 12px;
+      color: #94a3b8;
+      margin: 4px 0;
+    }
+    .footer a {
+      color: #3b82f6;
+      text-decoration: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .header, .body-content, .footer { padding: 20px; }
+      .article-card { padding: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    
+    <!-- HEADER -->
+    <div class="header">
+      <h1>📋 Veille Juridique</h1>
+      <p class="subtitle">Semaine du {{ week_date }} — {{ total_articles }} article{{ 's' if total_articles > 1 else '' }} pertinent{{ 's' if total_articles > 1 else '' }}</p>
+      <div class="stats">
+        {% if urgent_count > 0 %}
+        <span class="stat-box stat-urgent">🔴 {{ urgent_count }} urgent{{ 's' if urgent_count > 1 else '' }}</span>
+        {% endif %}
+        {% if vigilance_count > 0 %}
+        <span class="stat-box stat-vigilance">🟡 {{ vigilance_count }} vigilance</span>
+        {% endif %}
+        {% if info_count > 0 %}
+        <span class="stat-box stat-info">🔵 {{ info_count }} information</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="body-content">
+
+      <!-- SECTION URGENTE -->
+      {% if urgent_articles %}
+      <div class="section">
+        <div class="section-header">
+          <span class="section-icon icon-urgent">!</span>
+          <h2 class="section-title">Action urgente</h2>
+          <span class="section-count">{{ urgent_articles|length }}</span>
+        </div>
+        {% for article in urgent_articles %}
+        <div class="article-card" style="border-left: 3px solid #dc2626;">
+          <span class="article-score score-high">{{ article.relevance_score }}</span>
+          <a href="{{ article.url }}" class="article-title" target="_blank">{{ article.title }}</a>
+          <div class="article-meta">
+            <span class="source">{{ article.source_name }}</span>
+            {% if article.published_date %} · {{ article.published_date }}{% endif %}
+          </div>
+          {% if article.summary %}
+          <div class="article-summary">{{ article.summary }}</div>
+          {% endif %}
+          {% if article.tags %}
+          <div class="article-tags">
+            {% for tag in article.tags %}<span class="tag">{{ tag }}</span>{% endfor %}
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- SECTION VIGILANCE -->
+      {% if vigilance_articles %}
+      <div class="section">
+        <div class="section-header">
+          <span class="section-icon icon-vigilance">⚠</span>
+          <h2 class="section-title">Vigilance</h2>
+          <span class="section-count">{{ vigilance_articles|length }}</span>
+        </div>
+        {% for article in vigilance_articles %}
+        <div class="article-card" style="border-left: 3px solid #d97706;">
+          <span class="article-score score-medium">{{ article.relevance_score }}</span>
+          <a href="{{ article.url }}" class="article-title" target="_blank">{{ article.title }}</a>
+          <div class="article-meta">
+            <span class="source">{{ article.source_name }}</span>
+            {% if article.published_date %} · {{ article.published_date }}{% endif %}
+          </div>
+          {% if article.summary %}
+          <div class="article-summary">{{ article.summary }}</div>
+          {% endif %}
+          {% if article.tags %}
+          <div class="article-tags">
+            {% for tag in article.tags %}<span class="tag">{{ tag }}</span>{% endfor %}
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- SECTION INFORMATION -->
+      {% if info_articles %}
+      <div class="section">
+        <div class="section-header">
+          <span class="section-icon icon-info">i</span>
+          <h2 class="section-title">Pour information</h2>
+          <span class="section-count">{{ info_articles|length }}</span>
+        </div>
+        {% for article in info_articles %}
+        <div class="article-card" style="border-left: 3px solid #2563eb;">
+          <span class="article-score score-low">{{ article.relevance_score }}</span>
+          <a href="{{ article.url }}" class="article-title" target="_blank">{{ article.title }}</a>
+          <div class="article-meta">
+            <span class="source">{{ article.source_name }}</span>
+            {% if article.published_date %} · {{ article.published_date }}{% endif %}
+          </div>
+          {% if article.summary %}
+          <div class="article-summary">{{ article.summary }}</div>
+          {% endif %}
+          {% if article.tags %}
+          <div class="article-tags">
+            {% for tag in article.tags %}<span class="tag">{{ tag }}</span>{% endfor %}
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- RIEN TROUVÉ -->
+      {% if total_articles == 0 %}
+      <div class="empty-state">
+        Aucun article pertinent identifié cette semaine.<br>
+        Vérifiez vos sources ou ajustez vos domaines d'expertise.
+      </div>
+      {% endif %}
+
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+      <p>Généré automatiquement par <strong>Veille Juridique IA</strong></p>
+      <p>{{ total_sources }} sources analysées · Seuil de pertinence ≥ {{ min_score }}</p>
+      <p style="margin-top: 12px;">
+        <a href="#">⚙️ Modifier mes préférences</a>
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>
