@@ -527,27 +527,90 @@ if st.button("▶️  Lancer la collecte et l'analyse IA", type="primary", use_c
 
         with st.status(f"🤖 Analyse IA de {len(all_articles)} articles...", expanded=True) as status:
             import anthropic
-            client = anthropic.Anthropic(api_key=api_key)
-            expertise = config.get("expertise_domains", "")
 
+            # ── Test de connexion API ──
+            st.write("🔑 Test de connexion à l'API Claude...")
+            try:
+                client = anthropic.Anthropic(api_key=api_key)
+                test_response = client.messages.create(
+                    model="claude-sonnet-4-20250514",
+                    max_tokens=50,
+                    messages=[{"role": "user", "content": "Réponds juste OK."}],
+                )
+                st.write(f"✅ API connectée (modèle: claude-sonnet-4-20250514)")
+            except anthropic.AuthenticationError as e:
+                st.error(f"🔴 **Clé API invalide !** Vérifiez ANTHROPIC_API_KEY dans les secrets Streamlit. Erreur: {e}")
+                status.update(label="❌ Erreur API", state="error")
+                st.stop()
+            except anthropic.PermissionDeniedError as e:
+                st.error(f"🔴 **Permission refusée.** Votre clé n'a peut-être pas accès à ce modèle. Erreur: {e}")
+                status.update(label="❌ Erreur API", state="error")
+                st.stop()
+            except anthropic.NotFoundError as e:
+                st.error(f"🔴 **Modèle introuvable.** Erreur: {e}")
+                status.update(label="❌ Erreur API", state="error")
+                st.stop()
+            except Exception as e:
+                st.error(f"🔴 **Erreur API inattendue:** {type(e).__name__}: {e}")
+                status.update(label="❌ Erreur API", state="error")
+                st.stop()
+
+            expertise = config.get("expertise_domains", "")
             progress = st.progress(0)
 
+            scoring_errors = 0
+            first_error_shown = False
             for i, article in enumerate(all_articles):
                 st.write(f"  [{i+1}/{len(all_articles)}] {article.title[:70]}...")
                 try:
                     scored = score_article(article, expertise, client)
                     scored_articles.append(scored)
+                    if scored.relevance_score > 0:
+                        st.write(f"    → Score: {scored.relevance_score}/100 [{scored.action_level}]")
+                    else:
+                        # Afficher le message d'erreur stocké dans summary
+                        error_detail = scored.summary if scored.summary else "raison inconnue"
+                        st.write(f"    → Score: 0 ({error_detail})")
+                        scoring_errors += 1
+                        # Afficher l'erreur détaillée pour le premier échec
+                        if not first_error_shown:
+                            st.warning(f"⚠️ Premier échec détaillé: {error_detail}")
+                            first_error_shown = True
                 except Exception as e:
-                    st.write(f"  ⚠️ Erreur scoring : {e}")
+                    st.write(f"  ⚠️ Erreur scoring : {type(e).__name__}: {e}")
                     scored_articles.append(article)
+                    scoring_errors += 1
                 progress.progress((i + 1) / len(all_articles))
 
+            if scoring_errors > 0:
+                st.warning(f"⚠️ {scoring_errors}/{len(all_articles)} articles scorés à 0.")
             status.update(label="🤖 Analyse IA terminée", state="complete")
 
         # ── Étape 3 : Filtrer et trier ──
         relevant = [a for a in scored_articles if a.relevance_score >= MIN_RELEVANCE_SCORE]
         relevant = deduplicate_articles(relevant)
         relevant.sort(key=lambda a: a.relevance_score, reverse=True)
+
+        # ── Debug : résumé des scores ──
+        all_scores = [a.relevance_score for a in scored_articles]
+        zero_scores = sum(1 for s in all_scores if s == 0)
+        above_threshold = sum(1 for s in all_scores if s >= MIN_RELEVANCE_SCORE)
+
+        with st.expander(f"🔍 Diagnostic du scoring ({len(scored_articles)} articles analysés)", expanded=(len(relevant) == 0)):
+            st.write(f"**Seuil de pertinence :** {MIN_RELEVANCE_SCORE}/100")
+            st.write(f"**Articles scorés à 0 (erreur probable) :** {zero_scores}/{len(scored_articles)}")
+            st.write(f"**Articles au-dessus du seuil :** {above_threshold}/{len(scored_articles)}")
+            if all_scores:
+                st.write(f"**Score max :** {max(all_scores)} | **Score moyen :** {sum(all_scores) // len(all_scores)}")
+
+            # Montrer les 10 meilleurs scores même s'ils sont sous le seuil
+            st.write("**Top 10 des scores :**")
+            top_articles = sorted(scored_articles, key=lambda a: a.relevance_score, reverse=True)[:10]
+            for a in top_articles:
+                status_icon = "✅" if a.relevance_score >= MIN_RELEVANCE_SCORE else "❌"
+                st.write(f"  {status_icon} **{a.relevance_score}/100** — {a.title[:80]}")
+                if a.summary:
+                    st.caption(f"    {a.summary[:150]}")
 
         # ── Affichage des résultats ──
         st.markdown("---")
