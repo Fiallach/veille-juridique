@@ -468,6 +468,14 @@ if not api_key:
 
 can_launch = has_sources and has_expertise and bool(api_key)
 
+# Calcul du nombre de jours selon la fréquence
+frequency = config.get("frequency", "weekly")
+days_back_map = {"daily": 1, "weekly": 7, "biweekly": 14}
+days_back = days_back_map.get(frequency, 7)
+freq_label = {"daily": "24h", "weekly": "7 jours", "biweekly": "14 jours"}.get(frequency, "7 jours")
+
+st.caption(f"📅 Période de collecte : les **{freq_label}** les plus récents (selon votre fréquence).")
+
 if st.button("▶️  Lancer la collecte et l'analyse IA", type="primary", use_container_width=True, disabled=not can_launch):
 
     # Sauvegarder la config avant de lancer
@@ -476,14 +484,14 @@ if st.button("▶️  Lancer la collecte et l'analyse IA", type="primary", use_c
     all_articles = []
 
     # ── Étape 1 : Collecte RSS ──
-    with st.status("🔍 Collecte des articles...", expanded=True) as status:
+    with st.status(f"🔍 Collecte des articles des {freq_label} les plus récents...", expanded=True) as status:
         for source in config.get("public_sources", []):
             st.write(f"📡 {source.get('name', source['url'])}...")
             try:
                 articles = collect_from_rss(
                     source["url"],
                     source_name=source.get("name", ""),
-                    days_back=7,
+                    days_back=days_back,
                 )
                 all_articles.extend(articles)
                 st.write(f"   ✅ {len(articles)} articles trouvés")
