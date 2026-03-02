@@ -98,29 +98,47 @@ def generate_keywords(expertise_domains: str, client: genai.Client) -> list[str]
             model=GEMINI_MODEL,
             config=types.GenerateContentConfig(
                 system_instruction=KEYWORDS_SYSTEM,
-                max_output_tokens=1500,
+                max_output_tokens=2000,
                 temperature=0.3,
             ),
-            contents=f"Domaines d'expertise :\n{expertise_domains}\n\nGénère la liste de mots-clés.",
+            contents=f"Domaines d'expertise :\n{expertise_domains}\n\nGénère la liste de mots-clés. Réponds UNIQUEMENT avec un JSON array.",
         )
 
-        raw = response.text.strip()
+        # Gemini 2.5 peut avoir plusieurs parties (thinking + réponse)
+        raw = ""
+        if hasattr(response, 'candidates') and response.candidates:
+            for part in response.candidates[0].content.parts:
+                if hasattr(part, 'text') and part.text:
+                    # Ignorer les parties "thought" 
+                    if hasattr(part, 'thought') and part.thought:
+                        continue
+                    raw += part.text
+        
+        if not raw and hasattr(response, 'text'):
+            raw = response.text or ""
+
+        raw = raw.strip()
+        logger.info(f"Réponse mots-clés brute (premiers 300 chars): {raw[:300]}")
 
         # Nettoyer backticks
-        if raw.startswith("```"):
-            raw = raw.split("\n", 1)[-1] if "\n" in raw else raw[3:]
-        if raw.endswith("```"):
-            raw = raw.rsplit("```", 1)[0]
-        if raw.startswith("```json"):
-            raw = raw[7:]
+        if "```json" in raw:
+            raw = raw.split("```json", 1)[1]
+        if "```" in raw:
+            raw = raw.split("```")[0]
         raw = raw.strip()
+
+        # Chercher le array JSON
+        start = raw.find("[")
+        end = raw.rfind("]") + 1
+        if start >= 0 and end > start:
+            raw = raw[start:end]
 
         keywords = json.loads(raw)
         if isinstance(keywords, list):
             return [k.lower().strip() for k in keywords if isinstance(k, str) and len(k) > 1]
 
     except json.JSONDecodeError as e:
-        logger.error(f"Erreur JSON mots-clés: {e}")
+        logger.error(f"Erreur JSON mots-clés: {e} — raw: {raw[:500]}")
     except Exception as e:
         logger.error(f"Erreur génération mots-clés: {type(e).__name__}: {e}")
 
@@ -263,7 +281,18 @@ Réponds avec un JSON array de {len(batch)} éléments."""
                 contents=prompt,
             )
 
-            results = _parse_json_response(response.text)
+            # Extraire le texte (ignorer les parties "thought")
+            raw = ""
+            if hasattr(response, 'candidates') and response.candidates:
+                for part in response.candidates[0].content.parts:
+                    if hasattr(part, 'text') and part.text:
+                        if hasattr(part, 'thought') and part.thought:
+                            continue
+                        raw += part.text
+            if not raw and hasattr(response, 'text'):
+                raw = response.text or ""
+
+            results = _parse_json_response(raw)
 
             if isinstance(results, list) and len(results) > 0:
                 for i, article in enumerate(batch):
