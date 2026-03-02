@@ -268,9 +268,12 @@ if st.button("▶️  Lancer la collecte et l'analyse IA", type="primary", use_c
         expertise = config.get("expertise_domains", "")
         st.write("🧠 Génération des mots-clés... (1 appel)")
         keywords = generate_keywords(expertise, client)
-        st.write(f"✅ {len(keywords)} mots-clés générés")
-        with st.expander(f"Voir les mots-clés ({len(keywords)})"):
-            st.write(", ".join(keywords[:60]))
+        if keywords:
+            st.write(f"✅ {len(keywords)} mots-clés générés")
+            with st.expander(f"Voir les mots-clés ({len(keywords)})"):
+                st.write(", ".join(keywords[:60]))
+        else:
+            st.warning("⚠️ 0 mots-clés générés — le pré-filtrage sera désactivé (tous les articles seront scorés)")
         status.update(label=f"🧠 {len(keywords)} mots-clés", state="complete")
 
     # ═══ ÉTAPE 3 : Pré-filtrage ═══
