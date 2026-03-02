@@ -19,7 +19,10 @@ from collectors.rss_collector import Article
 
 logger = logging.getLogger(__name__)
 
-GEMINI_MODEL = "gemini-2.0-flash"
+GEMINI_MODEL = "gemini-2.5-flash"
+GEMINI_MODEL_FALLBACK = "gemini-2.0-flash-lite"
+MAX_RETRIES = 3
+RETRY_DELAY = 50  # secondes — le message Google dit "retry in 45s"
 
 
 # ══════════════════════════════════════════
@@ -29,6 +32,43 @@ GEMINI_MODEL = "gemini-2.0-flash"
 def get_gemini_client(api_key: str) -> genai.Client:
     """Crée un client Gemini."""
     return genai.Client(api_key=api_key)
+
+
+def _call_gemini(client: genai.Client, system: str, prompt: str, max_tokens: int = 1500, temperature: float = 0.3) -> str:
+    """
+    Appelle Gemini avec retry automatique et fallback modèle.
+    Retourne le texte de la réponse.
+    """
+    import time
+
+    models_to_try = [GEMINI_MODEL, GEMINI_MODEL_FALLBACK]
+
+    for model in models_to_try:
+        for attempt in range(MAX_RETRIES):
+            try:
+                response = client.models.generate_content(
+                    model=model,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system,
+                        max_output_tokens=max_tokens,
+                        temperature=temperature,
+                    ),
+                    contents=prompt,
+                )
+                return response.text
+
+            except Exception as e:
+                error_str = str(e)
+                if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+                    wait = RETRY_DELAY * (attempt + 1)
+                    logger.warning(f"Rate limit {model} (tentative {attempt+1}/{MAX_RETRIES}), attente {wait}s...")
+                    time.sleep(wait)
+                else:
+                    # Erreur non-rate-limit : essayer le modèle suivant
+                    logger.warning(f"Erreur {model}: {type(e).__name__}: {e}")
+                    break  # Sort de la boucle retry, passe au modèle suivant
+
+    raise Exception(f"Tous les modèles ont échoué après {MAX_RETRIES} tentatives")
 
 
 # ══════════════════════════════════════════
