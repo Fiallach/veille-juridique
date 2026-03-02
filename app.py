@@ -259,7 +259,7 @@ if st.button("▶️  Lancer la collecte et l'analyse IA", type="primary", use_c
     with st.status("🔑 Connexion Gemini + mots-clés...", expanded=True) as status:
         try:
             client = get_gemini_client(api_key)
-            test = client.models.generate_content(model="gemini-2.0-flash", contents="Réponds OK.")
+            test = client.models.generate_content(model="gemini-2.5-flash", contents="Réponds OK.")
             st.write(f"✅ API Gemini connectée")
         except Exception as e:
             st.error(f"🔴 Erreur API Gemini : {type(e).__name__}: {e}")
